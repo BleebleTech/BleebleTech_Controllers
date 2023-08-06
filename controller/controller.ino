@@ -46,6 +46,19 @@ static constexpr int kPinJoystickRight_X = 14;
 static constexpr int kPinJoystickRight_Y = 12;
 static constexpr int kPinJoystickRight_Button = 33;
 
+// Arrays for reading inputs in loops
+static constexpr std::array<int, 14> kPins_Buttons = {
+    kPinButtonLeft_Up,       kPinButtonLeft_Right,     kPinButtonLeft_Down,  kPinButtonLeft_Left,
+    kPinButtonRight_Up,      kPinButtonRight_Right,    kPinButtonRight_Down, kPinButtonRight_Left,
+    kPinButtonShoulder_Left, kPinButtonShoulder_Right, kPinButtonStart,      kPinButtonSelect,
+    kPinJoystickLeft_Button, kPinJoystickRight_Button};
+static constexpr std::array<int, 4> kPins_Joysticks = {kPinJoystickLeft_X, kPinJoystickLeft_Y,
+                                                       kPinJoystickRight_X, kPinJoystickRight_Y};
+// Current encoding can only handle 16 digital values (1b each)
+static_assert(kPins_Buttons.size() <= 16);
+// Current encoding can only handle 4 analog values (1B each)
+static_assert(kPins_Joysticks.size() == 4);
+
 // Status LED
 static constexpr int kPinLed_Red = 23;
 static constexpr int kPinLed_Green = 22;
@@ -59,6 +72,9 @@ static BLEUUID kBleServiceUUID("0000FFE0-0000-1000-8000-00805F9B34FB");
 static BLEUUID kBleCharUUID("0000FFE1-0000-1000-8000-00805F9B34FB");
 static constexpr int kScanTime_s = 5;
 static constexpr int kScanDelay_ms = 2000;
+
+// Generic configuration
+static constexpr int kLoopDelay_ms = 200;
 
 /* Variables ------------------------------------------------------------------------------------ */
 
@@ -177,5 +193,38 @@ void setup() {
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
+  while (true) {
+    uint16_t encodedButtons = 0xFFFF;
+    uint8_t encodedJoysticks[4] = {127, 127, 127, 127};
+    uint8_t blePayload[sizeof(encodedButtons) + sizeof(encodedJoysticks)];
+
+    // Read buttons
+    for (int i = 0; i < kPins_Buttons.size(); i++) {
+      uint16_t readValue = digitalRead(kPins_Buttons[i]);
+      encodedButtons ^= readValue << i;
+    }
+
+    // Read joysticks
+    for (int i = 0; i < kPins_Joysticks.size(); i++) {
+      uint32_t readValue = analogRead(kPins_Joysticks[i]);
+      encodedJoysticks[i] = map(readValue, 0, 4095, 0, 254);
+    }
+
+    // Swap button encoding to big-endian
+    encodedButtons = __htons(encodedButtons);
+
+    // Combine inputs into payload
+    memcpy(&blePayload[0], &encodedButtons, sizeof(encodedButtons));
+    memcpy(&blePayload[sizeof(encodedButtons)], encodedJoysticks, sizeof(encodedJoysticks));
+
+    // Log and transmit the value to the robot
+    Serial.printf("TX: [0x%02x][0x%02x][0x%02x][0x%02x][0x%02x][0x%02x]\n", blePayload[0],
+                  blePayload[1], blePayload[2], blePayload[3], blePayload[4], blePayload[5]);
+    bleClient->getService(kBleServiceUUID)
+        ->getCharacteristic(kBleCharUUID)
+        ->writeValue(blePayload, sizeof(blePayload));
+
+    // Delay to limit the transmission frequency
+    delay(kLoopDelay_ms);
+  }
 }
