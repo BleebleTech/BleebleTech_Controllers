@@ -74,7 +74,7 @@ static constexpr int kScanTime_s = 5;
 static constexpr int kScanDelay_ms = 2000;
 
 // Generic configuration
-static constexpr int kLoopDelay_ms = 200;
+static constexpr int kLoopDelay_ms = 64;
 
 /* Variables ------------------------------------------------------------------------------------ */
 
@@ -145,7 +145,7 @@ void setup() {
 
   /* Begin debug serial --------------- */
 
-  Serial.begin(9600);
+  Serial.begin(115200);
 
   /* Scan for BLE devices ------------- */
 
