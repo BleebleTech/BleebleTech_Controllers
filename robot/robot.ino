@@ -9,12 +9,24 @@
 
 /* Constants ------------------------------------------------------------------------------------ */
 
+// Motor control pins connected to H-Bridge motor driver
+static constexpr int kRightWheel_Backwards = 3;
+static constexpr int kRightWheel_Forwards = 5;
+static constexpr int kLeftWheel_Forwards = 6;
+static constexpr int kLeftWheel_Backwards = 11;
+
 /* Variables ------------------------------------------------------------------------------------ */
 
 /* Functions ------------------------------------------------------------------------------------ */
 
 /* Setup and Loop ------------------------------------------------------------------------------- */
 
-void setup() {}
+void setup() {
+  // Motor setup
+  pinMode(kRightWheel_Backwards, OUTPUT);
+  pinMode(kRightWheel_Forwards, OUTPUT);
+  pinMode(kLeftWheel_Forwards, OUTPUT);
+  pinMode(kLeftWheel_Backwards, OUTPUT);
+}
 
 void loop() {}
