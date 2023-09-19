@@ -15,6 +15,17 @@ static constexpr int kRightWheel_Forwards = 5;
 static constexpr int kLeftWheel_Forwards = 6;
 static constexpr int kLeftWheel_Backwards = 11;
 
+// Joystick parsing configuration
+static constexpr uint8_t kJoystick_Middle = 128;
+static constexpr uint8_t kJoystick_Deadzone = 16;
+static constexpr uint8_t kJoystick_Maximum = 254;
+
+// Motor control configuration
+static constexpr uint8_t kMotorMaximum = 254;
+// Adjust either of these down (NOT ABOVE 255) if one motor is faster than the other
+static constexpr uint8_t kMotorMaximum_Left = 255;
+static constexpr uint8_t kMotorMaximum_Right = 255;
+
 // Message decoding configuration
 static constexpr int kMessageSize_B = 7;
 
@@ -37,6 +48,39 @@ static void parseBleMessage() {
              rxBuffer[1], rxBuffer[2], rxBuffer[3], rxBuffer[4], rxBuffer[5], rxBuffer[6]);
     Serial.println(s);
     */
+    uint8_t c = 0;
+
+    // Left motor
+    c = rxBuffer[4];
+    if (c >= (kJoystick_Middle + kJoystick_Deadzone)) {
+      analogWrite(kLeftWheel_Forwards, map(c, kJoystick_Middle + kJoystick_Deadzone,
+                                           kJoystick_Maximum, 0, kMotorMaximum_Left));
+      analogWrite(kLeftWheel_Backwards, 0);
+    } else if (c <= (kJoystick_Middle - kJoystick_Deadzone)) {
+      analogWrite(kLeftWheel_Forwards, 0);
+      analogWrite(kLeftWheel_Backwards,
+                  map(kJoystick_Maximum - c, kJoystick_Middle - kJoystick_Deadzone,
+                      kJoystick_Maximum, 0, kMotorMaximum_Left));
+    } else {
+      analogWrite(kLeftWheel_Forwards, 0);
+      analogWrite(kLeftWheel_Backwards, 0);
+    }
+
+    // Right motor
+    c = rxBuffer[6];
+    if (c >= (kJoystick_Middle + kJoystick_Deadzone)) {
+      analogWrite(kRightWheel_Forwards, map(c, kJoystick_Middle + kJoystick_Deadzone,
+                                            kJoystick_Maximum, 0, kMotorMaximum_Right));
+      analogWrite(kRightWheel_Backwards, 0);
+    } else if (c <= (kJoystick_Middle - kJoystick_Deadzone)) {
+      analogWrite(kRightWheel_Forwards, 0);
+      analogWrite(kRightWheel_Backwards,
+                  map(kJoystick_Maximum - c, kJoystick_Middle - kJoystick_Deadzone,
+                      kJoystick_Maximum, 0, kMotorMaximum_Right));
+    } else {
+      analogWrite(kRightWheel_Forwards, 0);
+      analogWrite(kRightWheel_Backwards, 0);
+    }
   }
 }
 
