@@ -194,9 +194,10 @@ void setup() {
 
 void loop() {
   while (true) {
-    uint16_t encodedButtons = 0xFFFF;
+    uint16_t encodedButtons = 0x3FFF;
     uint8_t encodedJoysticks[4] = {127, 127, 127, 127};
-    uint8_t blePayload[sizeof(encodedButtons) + sizeof(encodedJoysticks)];
+    uint8_t startByte = 0xFF;
+    uint8_t blePayload[sizeof(startByte) + sizeof(encodedButtons) + sizeof(encodedJoysticks)];
 
     // Read buttons
     for (int i = 0; i < kPins_Buttons.size(); i++) {
@@ -214,12 +215,15 @@ void loop() {
     encodedButtons = __htons(encodedButtons);
 
     // Combine inputs into payload
-    memcpy(&blePayload[0], &encodedButtons, sizeof(encodedButtons));
-    memcpy(&blePayload[sizeof(encodedButtons)], encodedJoysticks, sizeof(encodedJoysticks));
+    memcpy(&blePayload[0], &startByte, sizeof(startByte));
+    memcpy(&blePayload[sizeof(startByte)], &encodedButtons, sizeof(encodedButtons));
+    memcpy(&blePayload[sizeof(startByte) + sizeof(encodedButtons)], encodedJoysticks,
+           sizeof(encodedJoysticks));
 
     // Log and transmit the value to the robot
-    Serial.printf("TX: [0x%02x][0x%02x][0x%02x][0x%02x][0x%02x][0x%02x]\n", blePayload[0],
-                  blePayload[1], blePayload[2], blePayload[3], blePayload[4], blePayload[5]);
+    Serial.printf("TX: [0x%02x][0x%02x][0x%02x][0x%02x][0x%02x][0x%02x][0x%02x]\n", blePayload[0],
+                  blePayload[1], blePayload[2], blePayload[3], blePayload[4], blePayload[5],
+                  blePayload[6]);
     bleClient->getService(kBleServiceUUID)
         ->getCharacteristic(kBleCharUUID)
         ->writeValue(blePayload, sizeof(blePayload));
