@@ -31,14 +31,13 @@ static constexpr uint8_t kMotorMaximum_Left = 255;
 static constexpr uint8_t kMotorMaximum_Right = 255;
 
 // Servo configuration
-static constexpr int kPinArmServo = 10;
-static constexpr int kPinLeftPaddleServo = 8;
-static constexpr int kPinRightPaddleServo = 9;
+static constexpr int kPinArmServo = 9;
+static constexpr int kPinGateServo = 10;
 
 static constexpr uint8_t kArmServoMin = 60;
 static constexpr uint8_t kArmServoMax = 120;
-static constexpr uint8_t kLeftPaddleServoMin = 0;
-static constexpr uint8_t kLeftPaddleServoMax = 90;
+static constexpr uint8_t kGateServoMin = 0;
+static constexpr uint8_t kGateServoMax = 90;
 static constexpr uint8_t kRightPaddleServoMin = 90;
 static constexpr uint8_t kRightPaddleServoMax = 180;
 
@@ -55,11 +54,10 @@ static uint8_t rxCache[kMessageSize_B] = {};
 static size_t numRxBytes = 0;
 
 static Servo armServo;
-static Servo leftPaddleServo;
-static Servo rightPaddleServo;
+static Servo gateServo;
 
 static uint8_t armServoPos = 90;
-static uint8_t leftPaddleServoPos = 90;
+static uint8_t gateServoPos = 90;
 static uint8_t rightPaddleServoPos = 90;
 
 static bool firstMsgRx = false;
@@ -86,16 +84,13 @@ static void parseBleMessage(const uint8_t* const aMsg) {
 
   armServo.write(armServoPos);
 
-  if ((c & 0x01) && leftPaddleServoPos < kLeftPaddleServoMax) {
-    leftPaddleServoPos += kPaddleServoSpeed;
-    rightPaddleServoPos = kRightPaddleServoMax - leftPaddleServoPos;
-  } else if ((c & 0x08) && leftPaddleServoPos > kLeftPaddleServoMin) {
-    leftPaddleServoPos -= kPaddleServoSpeed;
-    rightPaddleServoPos = kRightPaddleServoMax - leftPaddleServoPos;
+  if ((c & 0x01) && gateServoPos < kGateServoMax) {
+    gateServoPos += kPaddleServoSpeed;
+  } else if ((c & 0x08) && gateServoPos > kGateServoMin) {
+    gateServoPos -= kPaddleServoSpeed;
   }
 
-  leftPaddleServo.write(leftPaddleServoPos);
-  rightPaddleServo.write(rightPaddleServoPos);
+  gateServo.write(gateServoPos);
 
   // Left motor
   c = aMsg[4];
@@ -172,8 +167,7 @@ void setup() {
   pinMode(kLeftWheel_Backwards, OUTPUT);
 
   armServo.attach(kPinArmServo);
-  leftPaddleServo.attach(kPinLeftPaddleServo);
-  rightPaddleServo.attach(kPinRightPaddleServo);
+  gateServo.attach(kPinGateServo);
 }
 
 void loop() {
