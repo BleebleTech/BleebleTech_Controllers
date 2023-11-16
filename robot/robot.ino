@@ -11,6 +11,17 @@
 
 #include <Servo.h>
 
+/* Macros --------------------------------------------------------------------------------------- */
+
+/**
+ * @brief Uncomment this macro to enable "Tank Drive" mode. If left comment out, the robot will
+ * remain in the default "Single Joystick Drive" mode.
+ *
+ * @remark "Tank Drive" mode requires a controller with 2 joysticks, which would mean a tBB Advanced
+ * controller, but not a tBB Basic controller.
+ */
+// #define TANK_DRIVE
+
 /* Constants ------------------------------------------------------------------------------------ */
 
 // Motor control pins connected to H-Bridge motor driver
@@ -123,7 +134,37 @@ static void parseBleMessage(const uint8_t* const aMsg) {
   leftPaddleServo.write(leftPaddleServoPos);
   rightPaddleServo.write(rightPaddleServoPos);
 
-  // Single stick drive
+#ifdef TANK_DRIVE
+  /* -------------------------------------- */
+  /*               TANK DRIVE               */
+  /* -------------------------------------- */
+
+  // Left motor
+  c = aMsg[4];
+  if (c >= (kJoystick_Middle + kJoystick_Deadzone)) {
+    setLeftMotor(map(c, kJoystick_Middle + kJoystick_Deadzone, kJoystick_Maximum, 0, 1000));
+  } else if (c <= (kJoystick_Middle - kJoystick_Deadzone)) {
+    setLeftMotor(map(kJoystick_Maximum - c, kJoystick_Middle - kJoystick_Deadzone,
+                     kJoystick_Maximum, 0, -1000));
+  } else {
+    setLeftMotor(0);
+  }
+
+  // Right motor
+  c = aMsg[6];
+  if (c >= (kJoystick_Middle + kJoystick_Deadzone)) {
+    setRightMotor(map(c, kJoystick_Middle + kJoystick_Deadzone, kJoystick_Maximum, 0, 1000));
+  } else if (c <= (kJoystick_Middle - kJoystick_Deadzone)) {
+    setRightMotor(map(kJoystick_Maximum - c, kJoystick_Middle - kJoystick_Deadzone,
+                      kJoystick_Maximum, 0, -1000));
+  } else {
+    setRightMotor(0);
+  }
+#else
+  /* -------------------------------------- */
+  /*          SINGLE JOYSTICK DRIVE         */
+  /* -------------------------------------- */
+
   long fb = 0;  // Joystick "Forwards/Backward" value. Positive is forwards, negative is backwards.
   long lr = 0;  // Joystick "Left/Right" value. Positive is right, negative is left.
 
@@ -167,6 +208,7 @@ static void parseBleMessage(const uint8_t* const aMsg) {
       setRightMotor(fb - lr);
     }
   }
+#endif
 
   memcpy(rxCache, aMsg, kMessageSize_B);
 }
