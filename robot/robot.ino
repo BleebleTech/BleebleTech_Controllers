@@ -65,6 +65,32 @@ static uint8_t rightPaddleServoPos = 90;
 static bool firstMsgRx = false;
 
 /* Functions ------------------------------------------------------------------------------------ */
+static void setLeftMotor(const long aValue) {
+  if (aValue > 0) {
+    analogWrite(kLeftWheel_Forwards, map(aValue, 0, 1000, 0, kMotorMaximum_Left));
+    analogWrite(kLeftWheel_Backwards, 0);
+  } else if (aValue < 0) {
+    analogWrite(kLeftWheel_Forwards, 0);
+    analogWrite(kLeftWheel_Backwards, map(aValue, 0, -1000, 0, kMotorMaximum_Left));
+  } else {
+    analogWrite(kLeftWheel_Forwards, 0);
+    analogWrite(kLeftWheel_Backwards, 0);
+  }
+}
+
+static void setRightMotor(const long aValue) {
+  if (aValue > 0) {
+    analogWrite(kRightWheel_Forwards, map(aValue, 0, 1000, 0, kMotorMaximum_Right));
+    analogWrite(kRightWheel_Backwards, 0);
+  } else if (aValue < 0) {
+    analogWrite(kRightWheel_Forwards, 0);
+    analogWrite(kRightWheel_Backwards, map(aValue, 0, -1000, 0, kMotorMaximum_Right));
+  } else {
+    analogWrite(kRightWheel_Forwards, 0);
+    analogWrite(kRightWheel_Backwards, 0);
+  }
+}
+
 static void parseBleMessage(const uint8_t* const aMsg) {
   // LEAVE THIS COMMENTED OUT IF YOU'RE NOT USING IT!
   // Print out the buffer for the user to see
@@ -78,18 +104,18 @@ static void parseBleMessage(const uint8_t* const aMsg) {
 
   // Servos
   c = aMsg[2];
-  if ((c & 0x02) && armServoPos < kArmServoMax) {
+  if ((c & 0x20) && armServoPos < kArmServoMax) {
     armServoPos += kArmServoSpeed;
-  } else if ((c & 0x04) && armServoPos > kArmServoMin) {
+  } else if ((c & 0x40) && armServoPos > kArmServoMin) {
     armServoPos -= kArmServoSpeed;
   }
 
   armServo.write(armServoPos);
 
-  if ((c & 0x01) && leftPaddleServoPos < kLeftPaddleServoMax) {
+  if ((c & 0x10) && leftPaddleServoPos < kLeftPaddleServoMax) {
     leftPaddleServoPos += kPaddleServoSpeed;
     rightPaddleServoPos = kRightPaddleServoMax - leftPaddleServoPos;
-  } else if ((c & 0x08) && leftPaddleServoPos > kLeftPaddleServoMin) {
+  } else if ((c & 0x80) && leftPaddleServoPos > kLeftPaddleServoMin) {
     leftPaddleServoPos -= kPaddleServoSpeed;
     rightPaddleServoPos = kRightPaddleServoMax - leftPaddleServoPos;
   }
@@ -97,36 +123,49 @@ static void parseBleMessage(const uint8_t* const aMsg) {
   leftPaddleServo.write(leftPaddleServoPos);
   rightPaddleServo.write(rightPaddleServoPos);
 
-  // Left motor
-  c = aMsg[4];
+  // Single stick drive
+  long fb = 0;  // Joystick "Forwards/Backward" value. Positive is forwards, negative is backwards.
+  long lr = 0;  // Joystick "Left/Right" value. Positive is right, negative is left.
+
+  // LR
+  c = aMsg[3];
   if (c >= (kJoystick_Middle + kJoystick_Deadzone)) {
-    analogWrite(kLeftWheel_Forwards, map(c, kJoystick_Middle + kJoystick_Deadzone,
-                                         kJoystick_Maximum, 0, kMotorMaximum_Left));
-    analogWrite(kLeftWheel_Backwards, 0);
+    lr = map(c, kJoystick_Middle + kJoystick_Deadzone, kJoystick_Maximum, 0, -1000);
   } else if (c <= (kJoystick_Middle - kJoystick_Deadzone)) {
-    analogWrite(kLeftWheel_Forwards, 0);
-    analogWrite(kLeftWheel_Backwards,
-                map(kJoystick_Maximum - c, kJoystick_Middle - kJoystick_Deadzone, kJoystick_Maximum,
-                    0, kMotorMaximum_Left));
+    lr = map(kJoystick_Maximum - c, kJoystick_Middle - kJoystick_Deadzone, kJoystick_Maximum, 0,
+             1000);
   } else {
-    analogWrite(kLeftWheel_Forwards, 0);
-    analogWrite(kLeftWheel_Backwards, 0);
+    lr = 0;
   }
 
-  // Right motor
-  c = aMsg[6];
+  // FB
+  c = aMsg[4];
   if (c >= (kJoystick_Middle + kJoystick_Deadzone)) {
-    analogWrite(kRightWheel_Forwards, map(c, kJoystick_Middle + kJoystick_Deadzone,
-                                          kJoystick_Maximum, 0, kMotorMaximum_Right));
-    analogWrite(kRightWheel_Backwards, 0);
+    fb = map(c, kJoystick_Middle + kJoystick_Deadzone, kJoystick_Maximum, 0, 1000);
   } else if (c <= (kJoystick_Middle - kJoystick_Deadzone)) {
-    analogWrite(kRightWheel_Forwards, 0);
-    analogWrite(kRightWheel_Backwards,
-                map(kJoystick_Maximum - c, kJoystick_Middle - kJoystick_Deadzone, kJoystick_Maximum,
-                    0, kMotorMaximum_Right));
+    fb = map(kJoystick_Maximum - c, kJoystick_Middle - kJoystick_Deadzone, kJoystick_Maximum, 0,
+             -1000);
   } else {
-    analogWrite(kRightWheel_Forwards, 0);
-    analogWrite(kRightWheel_Backwards, 0);
+    fb = 0;
+  }
+
+  // Mixing
+  if (fb >= 0) {
+    if (lr >= 0) {
+      setLeftMotor(min(fb + lr, 1000));
+      setRightMotor(fb - lr);
+    } else if (lr < 0) {
+      setLeftMotor(fb + lr);
+      setRightMotor(min(fb - lr, 1000));
+    }
+  } else if (fb < 0) {
+    if (lr >= 0) {
+      setLeftMotor(fb + lr);
+      setRightMotor(max(fb - lr, -1000));
+    } else if (lr < 0) {
+      setLeftMotor(max(fb + lr, -1000));
+      setRightMotor(fb - lr);
+    }
   }
 
   memcpy(rxCache, aMsg, kMessageSize_B);
