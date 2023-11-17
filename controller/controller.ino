@@ -39,12 +39,12 @@ static constexpr int kPinButtonSelect = 2;
 // Left Joystick
 static constexpr int kPinJoystickLeft_X = 26;
 static constexpr int kPinJoystickLeft_Y = 27;
-static constexpr int kPinJoystickLeft_Button = 32;
+static constexpr int kPinJoystickLeft_Button = 34;
 
 // Right Joystick
 static constexpr int kPinJoystickRight_X = 14;
 static constexpr int kPinJoystickRight_Y = 12;
-static constexpr int kPinJoystickRight_Button = 33;
+static constexpr int kPinJoystickRight_Button = 35;
 
 // Arrays for reading inputs in loops
 static constexpr std::array<int, 14> kPins_Buttons = {
@@ -64,8 +64,8 @@ static constexpr int kPinLed_Red = 23;
 static constexpr int kPinLed_Green = 22;
 
 // BLE adapter programming port
-static constexpr int kPinEspTx_to_BleRx = 34;
-static constexpr int kPinEspRx_to_BleTx = 35;
+static constexpr int kPinEspTx_to_BleRx = 33;
+static constexpr int kPinEspRx_to_BleTx = 32;
 
 // BLE configuration
 static BLEUUID kBleServiceUUID("0000FFE0-0000-1000-8000-00805F9B34FB");
