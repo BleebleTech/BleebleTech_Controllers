@@ -22,6 +22,36 @@
  */
 // #define TANK_DRIVE
 
+/* Types ---------------------------------------------------------------------------------------- */
+
+struct Controller {
+  /* ---- Basic and Advanced Cntroller ---- */
+  boolean btnRightUp;
+  boolean btnRightRight;
+  boolean btnRightDown;
+  boolean btnRightLeft;
+
+  boolean btnStart;
+  boolean btnSelect;
+
+  long joyLeftX;  // -1000 to +1000 (left to right)
+  long joyLeftY;  // -1000 to +1000 (down to up)
+  boolean joyLeftBtn;
+
+  /* ---- Advanced Controller ONLY ---- */
+  boolean btnLeftUp;
+  boolean btnLeftRight;
+  boolean btnLeftDown;
+  boolean btnLeftLeft;
+
+  boolean btnLeftShoulder;
+  boolean btnRightShoulder;
+
+  long joyRightX;  // -1000 to +1000 (left to right)
+  long joyRightY;  // -1000 to +1000 (down to up)
+  boolean joyRightBtn;
+};
+
 /* Constants ------------------------------------------------------------------------------------ */
 
 // Motor control pins connected to H-Bridge motor driver
@@ -75,6 +105,8 @@ static uint8_t rightPaddleServoPos = 90;
 
 static bool firstMsgRx = false;
 
+static Controller controller = {};
+
 /* Functions ------------------------------------------------------------------------------------ */
 static void setLeftMotor(const long aValue) {
   if (aValue > 0) {
@@ -111,22 +143,41 @@ static void parseBleMessage(const uint8_t* const aMsg) {
            aMsg[1], aMsg[2], aMsg[3], aMsg[4], aMsg[5], aMsg[6]);
   Serial.println(s);
   */
-  uint8_t c = 0;
+
+  controller.btnLeftShoulder = (aMsg[1] & 0x01);
+  controller.btnRightShoulder = (aMsg[1] & 0x02);
+  controller.btnStart = (aMsg[1] & 0x04);
+  controller.btnSelect = (aMsg[1] & 0x08);
+  controller.joyLeftBtn = (aMsg[1] & 0x10);
+  controller.joyRightBtn = (aMsg[1] & 0x20);
+
+  controller.btnLeftUp = (aMsg[2] & 0x01);
+  controller.btnLeftRight = (aMsg[2] & 0x02);
+  controller.btnLeftDown = (aMsg[2] & 0x04);
+  controller.btnLeftLeft = (aMsg[2] & 0x08);
+  controller.btnRightUp = (aMsg[2] & 0x10);
+  controller.btnRightRight = (aMsg[2] & 0x20);
+  controller.btnRightDown = (aMsg[2] & 0x40);
+  controller.btnRightLeft = (aMsg[2] & 0x80);
+
+  controller.joyLeftX = aMsg[3];
+  controller.joyLeftY = aMsg[4];
+  controller.joyRightX = aMsg[5];
+  controller.joyRightY = aMsg[6];
 
   // Servos
-  c = aMsg[2];
-  if ((c & 0x20) && armServoPos < kArmServoMax) {
+  if (controller.btnRightRight && armServoPos < kArmServoMax) {
     armServoPos += kArmServoSpeed;
-  } else if ((c & 0x40) && armServoPos > kArmServoMin) {
+  } else if (controller.btnRightDown && armServoPos > kArmServoMin) {
     armServoPos -= kArmServoSpeed;
   }
 
   armServo.write(armServoPos);
 
-  if ((c & 0x10) && leftPaddleServoPos < kLeftPaddleServoMax) {
+  if (controller.btnRightUp && leftPaddleServoPos < kLeftPaddleServoMax) {
     leftPaddleServoPos += kPaddleServoSpeed;
     rightPaddleServoPos = kRightPaddleServoMax - leftPaddleServoPos;
-  } else if ((c & 0x80) && leftPaddleServoPos > kLeftPaddleServoMin) {
+  } else if (controller.btnRightLeft && leftPaddleServoPos > kLeftPaddleServoMin) {
     leftPaddleServoPos -= kPaddleServoSpeed;
     rightPaddleServoPos = kRightPaddleServoMax - leftPaddleServoPos;
   }
@@ -140,23 +191,23 @@ static void parseBleMessage(const uint8_t* const aMsg) {
   /* -------------------------------------- */
 
   // Left motor
-  c = aMsg[4];
-  if (c >= (kJoystick_Middle + kJoystick_Deadzone)) {
-    setLeftMotor(map(c, kJoystick_Middle + kJoystick_Deadzone, kJoystick_Maximum, 0, 1000));
-  } else if (c <= (kJoystick_Middle - kJoystick_Deadzone)) {
-    setLeftMotor(map(kJoystick_Maximum - c, kJoystick_Middle - kJoystick_Deadzone,
+  if (controller.joyLeftY >= (kJoystick_Middle + kJoystick_Deadzone)) {
+    setLeftMotor(map(controller.joyLeftY, kJoystick_Middle + kJoystick_Deadzone, kJoystick_Maximum,
+                     0, 1000));
+  } else if (controller.joyLeftY <= (kJoystick_Middle - kJoystick_Deadzone)) {
+    setLeftMotor(map(kJoystick_Maximum - controller.joyLeftY, kJoystick_Middle - kJoystick_Deadzone,
                      kJoystick_Maximum, 0, -1000));
   } else {
     setLeftMotor(0);
   }
 
   // Right motor
-  c = aMsg[6];
-  if (c >= (kJoystick_Middle + kJoystick_Deadzone)) {
-    setRightMotor(map(c, kJoystick_Middle + kJoystick_Deadzone, kJoystick_Maximum, 0, 1000));
-  } else if (c <= (kJoystick_Middle - kJoystick_Deadzone)) {
-    setRightMotor(map(kJoystick_Maximum - c, kJoystick_Middle - kJoystick_Deadzone,
-                      kJoystick_Maximum, 0, -1000));
+  if (controller.joyRightY >= (kJoystick_Middle + kJoystick_Deadzone)) {
+    setRightMotor(map(controller.joyRightY, kJoystick_Middle + kJoystick_Deadzone,
+                      kJoystick_Maximum, 0, 1000));
+  } else if (controller.joyRightY <= (kJoystick_Middle - kJoystick_Deadzone)) {
+    setRightMotor(map(kJoystick_Maximum - controller.joyRightY,
+                      kJoystick_Middle - kJoystick_Deadzone, kJoystick_Maximum, 0, -1000));
   } else {
     setRightMotor(0);
   }
@@ -169,23 +220,23 @@ static void parseBleMessage(const uint8_t* const aMsg) {
   long lr = 0;  // Joystick "Left/Right" value. Positive is right, negative is left.
 
   // LR
-  c = aMsg[3];
-  if (c >= (kJoystick_Middle + kJoystick_Deadzone)) {
-    lr = map(c, kJoystick_Middle + kJoystick_Deadzone, kJoystick_Maximum, 0, -1000);
-  } else if (c <= (kJoystick_Middle - kJoystick_Deadzone)) {
-    lr = map(kJoystick_Maximum - c, kJoystick_Middle - kJoystick_Deadzone, kJoystick_Maximum, 0,
-             1000);
+  if (controller.joyLeftX >= (kJoystick_Middle + kJoystick_Deadzone)) {
+    lr = map(controller.joyLeftX, kJoystick_Middle + kJoystick_Deadzone, kJoystick_Maximum, 0,
+             -1000);
+  } else if (controller.joyLeftX <= (kJoystick_Middle - kJoystick_Deadzone)) {
+    lr = map(kJoystick_Maximum - controller.joyLeftX, kJoystick_Middle - kJoystick_Deadzone,
+             kJoystick_Maximum, 0, 1000);
   } else {
     lr = 0;
   }
 
   // FB
-  c = aMsg[4];
-  if (c >= (kJoystick_Middle + kJoystick_Deadzone)) {
-    fb = map(c, kJoystick_Middle + kJoystick_Deadzone, kJoystick_Maximum, 0, 1000);
-  } else if (c <= (kJoystick_Middle - kJoystick_Deadzone)) {
-    fb = map(kJoystick_Maximum - c, kJoystick_Middle - kJoystick_Deadzone, kJoystick_Maximum, 0,
-             -1000);
+  if (controller.joyLeftY >= (kJoystick_Middle + kJoystick_Deadzone)) {
+    fb =
+        map(controller.joyLeftY, kJoystick_Middle + kJoystick_Deadzone, kJoystick_Maximum, 0, 1000);
+  } else if (controller.joyLeftY <= (kJoystick_Middle - kJoystick_Deadzone)) {
+    fb = map(kJoystick_Maximum - controller.joyLeftY, kJoystick_Middle - kJoystick_Deadzone,
+             kJoystick_Maximum, 0, -1000);
   } else {
     fb = 0;
   }
