@@ -13,6 +13,11 @@
 #include <BLEDevice.h>
 #include <BLEScan.h>
 #include <BLEUtils.h>
+#include <Preferences.h>
+#include <SoftwareSerial.h>
+
+#include <algorithm>
+#include <string>
 
 /* Constants ------------------------------------------------------------------------------------ */
 
@@ -80,6 +85,8 @@ static constexpr int kLoopDelay_ms = 64;
 
 static bool isBleDeviceConnected = false;
 static BLEClient* bleClient;
+static Preferences prefs;
+static EspSoftwareSerial::UART SwSerial;
 
 /* Classes -------------------------------------------------------------------------------------- */
 
@@ -147,6 +154,15 @@ void setup() {
 
   Serial.begin(115200);
 
+  /* Begin HM10 programming serial ---- */
+
+  SwSerial.begin(115200, SWSERIAL_8N1, kPinEspRx_to_BleTx, kPinEspTx_to_BleRx, false);
+  Serial.printf("SwSerial init status: %s\n", SwSerial ? "SUCCESS" : "FAILURE");
+
+  /* Initialize Preferences library --- */
+
+  prefs.begin("controller");
+
   /* Scan for BLE devices ------------- */
 
   Serial.println("Scanning for BLE devices...");
@@ -165,6 +181,45 @@ void setup() {
   bleScan->setInterval(100);
   bleScan->setWindow(99);
 
+  // Clear SwSerial Tx and Rx buffers
+  SwSerial.flush();
+  SwSerial.println();
+  SwSerial.readString();
+
+  // Attempt to read from an HM10, if plugged into the controller
+  for (int i = 0; i < 3; i++) {
+    // Request HM10's MAC address, and give plenty of time for it to respond
+    SwSerial.print("AT+ADDR?");
+    delay(500);
+
+    // Read the address provided by the HM10 (if any)
+    String read = SwSerial.readString();
+
+    // Check if the read MAC address string matches the expected format
+    if (read.length() == 20) {
+      // Remove the preceding "AT+GET: "
+      read.remove(0, 8);
+      Serial.printf("HM10 MAC Address: '%s'\n", read.c_str());
+
+      // Store the HM10's address in the Preferences library instance
+      // (this way the value will be remembered even after power cycles)
+      prefs.putString("hm10", read.c_str());
+
+      // Indicate to the user that the HM10's address has been stored
+      for (uint8_t blinkCount = 0; blinkCount < 5; blinkCount++) {
+        digitalWrite(kPinLed_Red, HIGH);
+        digitalWrite(kPinLed_Green, HIGH);
+        delay(200);
+        digitalWrite(kPinLed_Red, LOW);
+        digitalWrite(kPinLed_Green, LOW);
+        delay(200);
+      }
+
+      // Stop trying to talk to the HM10
+      break;
+    }
+  }
+
   // Until a device is connected...
   while (!isBleDeviceConnected) {
     // Scan for 5 seconds, trying to find BLE devices
@@ -174,12 +229,24 @@ void setup() {
 
     // For every BLE device found during the scan...
     for (int i = 0; i < numFoundDevices; i++) {
-      // If the name is "DSD TECH" (the manufacturer of the HM-10 BLE module we use)...
-      if (foundDevices.getDevice(i).getName().compare("DSD TECH") == 0) {
+      // Parse the scanned address to the same format as given by the HM10
+      // (12 hexadecimal characters (0-9 and A-F), all uppercase)
+      std::string addr = foundDevices.getDevice(i).getAddress().toString();
+      addr.erase(std::remove(addr.begin(), addr.end(), ':'), addr.end());
+      std::transform(addr.begin(), addr.end(), addr.begin(), ::toupper);
+      Serial.printf("Scanned address: '%s'\n", addr.c_str());
+
+      // If the address matches the one given to us by the HM10 module...
+      if (addr.compare(prefs.getString("hm10").c_str()) == 0) {
         // Connect to it!
         Serial.println("== HM10 MODULE FOUND ==");
         bleClient->connect(foundDevices.getDevice(i).getAddress());
         Serial.println("== HM10 MODULE CONNECTED ==");
+
+        // Indicate to the user that we're connected
+        digitalWrite(kPinLed_Green, HIGH);
+
+        // Stop looking through the scanned devices
         break;
       } else {
         // Otherwise, the found device isn't the one we're looking for. Ignore it.
