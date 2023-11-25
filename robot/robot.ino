@@ -81,7 +81,7 @@ class Controller {
       }
       // else {
       //   // Wait for data
-      delay(10);
+      delay(8);
       // }
     } else {
 #ifdef DEBUG
@@ -146,7 +146,7 @@ static constexpr int kPinLeftPaddleServo = 8;
 static constexpr int kPinRightPaddleServo = 9;
 
 static constexpr uint8_t kArmServoMin = 60;
-static constexpr uint8_t kArmServoMax = 110;
+static constexpr uint8_t kArmServoMax = 115;
 static constexpr uint8_t kLeftPaddleServoMin = 0;
 static constexpr uint8_t kLeftPaddleServoMax = 90;
 static constexpr uint8_t kRightPaddleServoMin = 90;
