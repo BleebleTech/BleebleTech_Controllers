@@ -22,34 +22,103 @@
  */
 // #define TANK_DRIVE
 
+/**
+ * @brief Uncomment this macro to enable debugging features. These can help you figure out if
+ * anything is going wrong, but may reduce the performance of the program.
+ */
+// #define DEBUG
+
 /* Types ---------------------------------------------------------------------------------------- */
 
-struct Controller {
-  /* ---- Basic and Advanced Cntroller ---- */
+class Controller {
+ protected:
+  static constexpr size_t kMessageSize_B = 7;
+
+  uint8_t rxBuffer[kMessageSize_B] = {};
+  size_t numRxBytes = 0;
+
+ public:
+  boolean btnLeftUp;
+  boolean btnLeftRight;
+  boolean btnLeftDown;
+  boolean btnLeftLeft;
   boolean btnRightUp;
   boolean btnRightRight;
   boolean btnRightDown;
   boolean btnRightLeft;
 
-  boolean btnStart;
-  boolean btnSelect;
-
-  long joyLeftX;  // -1000 to +1000 (left to right)
-  long joyLeftY;  // -1000 to +1000 (down to up)
-  boolean joyLeftBtn;
-
-  /* ---- Advanced Controller ONLY ---- */
-  boolean btnLeftUp;
-  boolean btnLeftRight;
-  boolean btnLeftDown;
-  boolean btnLeftLeft;
-
   boolean btnLeftShoulder;
   boolean btnRightShoulder;
 
-  long joyRightX;  // -1000 to +1000 (left to right)
-  long joyRightY;  // -1000 to +1000 (down to up)
+  boolean btnStart;
+  boolean btnSelect;
+
+  long joyLeftX = 128;  // 0 to 254 (left to right)
+  long joyLeftY = 128;  // 0 to 254 (down to up)
+  boolean joyLeftBtn;
+
+  long joyRightX = 128;  // 0 to 254 (left to right)
+  long joyRightY = 128;  // 0 to 254 (down to up)
   boolean joyRightBtn;
+
+  void update() {
+    // Collect individual bytes over BLE until a full message is received
+    if (numRxBytes != kMessageSize_B) {
+      while (Serial.available() > 0) {
+        uint8_t rxByte = Serial.read();
+
+        if (numRxBytes == 0 && rxByte != 0xFF) {
+          // Ignore input until we see the start of a message
+        } else if (numRxBytes < kMessageSize_B) {
+          // Append the byte to the message buffer
+          rxBuffer[numRxBytes++] = rxByte;
+        } else {
+          // We've somehow received too many bytes between start bytes.
+          // Clear the buffer and try again.
+          memset(rxBuffer, 0, sizeof(rxBuffer));
+          numRxBytes = 0;
+        }
+      }
+      // else {
+      //   // Wait for data
+      delay(10);
+      // }
+    } else {
+#ifdef DEBUG
+      // Print received message to the console
+      char s[48] = {0};
+      snprintf(s, 47, "RX: [0x%02x][0x%02x][0x%02x][0x%02x][0x%02x][0x%02x][0x%02x]\n", rxBuffer[0],
+               rxBuffer[1], rxBuffer[2], rxBuffer[3], rxBuffer[4], rxBuffer[5], rxBuffer[6]);
+      Serial.println(s);
+#endif
+
+      // Update the member variables to reflect the current state of the controller
+      btnLeftShoulder = (rxBuffer[1] & 0x01);
+      btnRightShoulder = (rxBuffer[1] & 0x02);
+      btnStart = (rxBuffer[1] & 0x04);
+      btnSelect = (rxBuffer[1] & 0x08);
+      joyLeftBtn = (rxBuffer[1] & 0x10);
+      joyRightBtn = (rxBuffer[1] & 0x20);
+
+      btnLeftUp = (rxBuffer[2] & 0x01);
+      btnLeftRight = (rxBuffer[2] & 0x02);
+      btnLeftDown = (rxBuffer[2] & 0x04);
+      btnLeftLeft = (rxBuffer[2] & 0x08);
+      btnRightUp = (rxBuffer[2] & 0x10);
+      btnRightRight = (rxBuffer[2] & 0x20);
+      btnRightDown = (rxBuffer[2] & 0x40);
+      btnRightLeft = (rxBuffer[2] & 0x80);
+
+      joyLeftX = rxBuffer[3];
+      joyLeftY = rxBuffer[4];
+      joyRightX = rxBuffer[5];
+      joyRightY = rxBuffer[6];
+
+      // Clear the message buffer to make room for the next message
+      memset(rxBuffer, 0, sizeof(rxBuffer));
+      numRxBytes = 0;
+    }
+  }
 };
 
 /* Constants ------------------------------------------------------------------------------------ */
@@ -77,7 +146,7 @@ static constexpr int kPinLeftPaddleServo = 8;
 static constexpr int kPinRightPaddleServo = 9;
 
 static constexpr uint8_t kArmServoMin = 60;
-static constexpr uint8_t kArmServoMax = 120;
+static constexpr uint8_t kArmServoMax = 110;
 static constexpr uint8_t kLeftPaddleServoMin = 0;
 static constexpr uint8_t kLeftPaddleServoMax = 90;
 static constexpr uint8_t kRightPaddleServoMin = 90;
@@ -86,14 +155,7 @@ static constexpr uint8_t kRightPaddleServoMax = 180;
 static constexpr uint16_t kArmServoSpeed = 1;
 static constexpr uint16_t kPaddleServoSpeed = 6;
 
-// Message decoding configuration
-static constexpr int kMessageSize_B = 7;
-
 /* Variables ------------------------------------------------------------------------------------ */
-
-static uint8_t rxBuffer[kMessageSize_B] = {};
-static uint8_t rxCache[kMessageSize_B] = {};
-static size_t numRxBytes = 0;
 
 static Servo armServo;
 static Servo leftPaddleServo;
@@ -102,8 +164,6 @@ static Servo rightPaddleServo;
 static uint8_t armServoPos = 90;
 static uint8_t leftPaddleServoPos = 90;
 static uint8_t rightPaddleServoPos = 90;
-
-static bool firstMsgRx = false;
 
 static Controller controller = {};
 
@@ -134,36 +194,37 @@ static void setRightMotor(const long aValue) {
   }
 }
 
-static void parseBleMessage(const uint8_t* const aMsg) {
-  // LEAVE THIS COMMENTED OUT IF YOU'RE NOT USING IT!
-  // Print out the buffer for the user to see
-  /*
-  char s[48] = {0};
-  snprintf(s, 47, "RX: [0x%02x][0x%02x][0x%02x][0x%02x][0x%02x][0x%02x][0x%02x]\n", aMsg[0],
-           aMsg[1], aMsg[2], aMsg[3], aMsg[4], aMsg[5], aMsg[6]);
-  Serial.println(s);
-  */
+/* Setup and Loop ------------------------------------------------------------------------------- */
 
-  controller.btnLeftShoulder = (aMsg[1] & 0x01);
-  controller.btnRightShoulder = (aMsg[1] & 0x02);
-  controller.btnStart = (aMsg[1] & 0x04);
-  controller.btnSelect = (aMsg[1] & 0x08);
-  controller.joyLeftBtn = (aMsg[1] & 0x10);
-  controller.joyRightBtn = (aMsg[1] & 0x20);
+void setup() {
+  // Setup serial
+  Serial.begin(115200);
+  // NOTE: This serial port is shared between both the BLE adapter (e.g., HM-10 module), and the
+  // Serial Monitor that is available when you connect the Arduino to a computer. This means if you
+  // print anything to the serial, it will go to BOTH the computer and the controller. This should
+  // be fine, because the controller doesn't currently parse any input over BLE.
 
-  controller.btnLeftUp = (aMsg[2] & 0x01);
-  controller.btnLeftRight = (aMsg[2] & 0x02);
-  controller.btnLeftDown = (aMsg[2] & 0x04);
-  controller.btnLeftLeft = (aMsg[2] & 0x08);
-  controller.btnRightUp = (aMsg[2] & 0x10);
-  controller.btnRightRight = (aMsg[2] & 0x20);
-  controller.btnRightDown = (aMsg[2] & 0x40);
-  controller.btnRightLeft = (aMsg[2] & 0x80);
+  // Motor setup
+  pinMode(kRightWheel_Backwards, OUTPUT);
+  pinMode(kRightWheel_Forwards, OUTPUT);
+  pinMode(kLeftWheel_Forwards, OUTPUT);
+  pinMode(kLeftWheel_Backwards, OUTPUT);
 
-  controller.joyLeftX = aMsg[3];
-  controller.joyLeftY = aMsg[4];
-  controller.joyRightX = aMsg[5];
-  controller.joyRightY = aMsg[6];
+  armServo.attach(kPinArmServo);
+  leftPaddleServo.attach(kPinLeftPaddleServo);
+  rightPaddleServo.attach(kPinRightPaddleServo);
+}
+
+void loop() {
+  /* ---------------------------------- */
+  /*         Update Controller          */
+  /* ---------------------------------- */
+
+  controller.update();
+
+  /* ---------------------------------- */
+  /*           Control Robot            */
+  /* ---------------------------------- */
 
   // Servos
   if (controller.btnRightRight && armServoPos < kArmServoMax) {
@@ -186,9 +247,9 @@ static void parseBleMessage(const uint8_t* const aMsg) {
   rightPaddleServo.write(rightPaddleServoPos);
 
 #ifdef TANK_DRIVE
-  /* -------------------------------------- */
-  /*               TANK DRIVE               */
-  /* -------------------------------------- */
+  /* ---------------------------------- */
+  /*             TANK DRIVE             */
+  /* ---------------------------------- */
 
   // Left motor
   if (controller.joyLeftY >= (kJoystick_Middle + kJoystick_Deadzone)) {
@@ -212,9 +273,9 @@ static void parseBleMessage(const uint8_t* const aMsg) {
     setRightMotor(0);
   }
 #else
-  /* -------------------------------------- */
-  /*          SINGLE JOYSTICK DRIVE         */
-  /* -------------------------------------- */
+  /* ---------------------------------- */
+  /*        SINGLE JOYSTICK DRIVE       */
+  /* ---------------------------------- */
 
   long fb = 0;  // Joystick "Forwards/Backward" value. Positive is forwards, negative is backwards.
   long lr = 0;  // Joystick "Left/Right" value. Positive is right, negative is left.
@@ -260,59 +321,4 @@ static void parseBleMessage(const uint8_t* const aMsg) {
     }
   }
 #endif
-
-  memcpy(rxCache, aMsg, kMessageSize_B);
-}
-
-static void processByteFromBle(const uint8_t aRxByte) {
-  if (numRxBytes == 0 && aRxByte != 0xFF) {
-    // Ignore
-  } else if (numRxBytes < kMessageSize_B) {
-    rxBuffer[numRxBytes] = aRxByte;
-    numRxBytes++;
-  } else {
-    // We've somehow received too many bytes between start bytes. Clear the buffer and try again.
-    memset(rxBuffer, 0, sizeof(rxBuffer));
-    numRxBytes = 0;
-  }
-
-  if (numRxBytes == kMessageSize_B) {
-    // We've received enough information to parse out a full message
-    firstMsgRx = true;
-    parseBleMessage(rxBuffer);
-
-    // Clear the buffer to make room for the next message
-    memset(rxBuffer, 0, sizeof(rxBuffer));
-    numRxBytes = 0;
-  }
-}
-
-/* Setup and Loop ------------------------------------------------------------------------------- */
-
-void setup() {
-  // Setup serial
-  Serial.begin(115200);
-  // NOTE: This serial port is shared between both the BLE adapter (e.g., HM-10 module), and the
-  // Serial Monitor that is available when you connect the Arduino to a computer. This means if you
-  // print anything to the serial, it will go to BOTH the computer and the controller. This should
-  // be fine, because the controller doesn't currently parse any input over BLE.
-
-  // Motor setup
-  pinMode(kRightWheel_Backwards, OUTPUT);
-  pinMode(kRightWheel_Forwards, OUTPUT);
-  pinMode(kLeftWheel_Forwards, OUTPUT);
-  pinMode(kLeftWheel_Backwards, OUTPUT);
-
-  armServo.attach(kPinArmServo);
-  leftPaddleServo.attach(kPinLeftPaddleServo);
-  rightPaddleServo.attach(kPinRightPaddleServo);
-}
-
-void loop() {
-  if (Serial.available() > 0) {
-    processByteFromBle(Serial.read());
-  } else if (firstMsgRx) {
-    parseBleMessage(rxCache);
-    delay(8);
-  }
 }
