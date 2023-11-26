@@ -152,11 +152,11 @@ void setup() {
 
   /* Begin debug serial --------------- */
 
-  Serial.begin(115200);
+  Serial.begin(9600);
 
   /* Begin HM10 programming serial ---- */
 
-  SwSerial.begin(115200, SWSERIAL_8N1, kPinEspRx_to_BleTx, kPinEspTx_to_BleRx, false);
+  SwSerial.begin(9600, SWSERIAL_8N1, kPinEspRx_to_BleTx, kPinEspTx_to_BleRx, false);
   Serial.printf("SwSerial init status: %s\n", SwSerial ? "SUCCESS" : "FAILURE");
 
   /* Initialize Preferences library --- */

@@ -198,7 +198,7 @@ static void setRightMotor(const long aValue) {
 
 void setup() {
   // Setup serial
-  Serial.begin(115200);
+  Serial.begin(9600);
   // NOTE: This serial port is shared between both the BLE adapter (e.g., HM-10 module), and the
   // Serial Monitor that is available when you connect the Arduino to a computer. This means if you
   // print anything to the serial, it will go to BOTH the computer and the controller. This should
