@@ -80,6 +80,9 @@ static constexpr int kScanDelay_ms = 2000;
 
 // Generic configuration
 static constexpr int kLoopDelay_ms = 64;
+static constexpr int kSwSerialTimeout_ms = 1000;
+static constexpr int kHm10AddrReqDelay_ms = 500;
+static constexpr int kMacAddrStrLen = 12 + 1;  // 12 hex characters, plus 1 NULL terminator
 
 /* Variables ------------------------------------------------------------------------------------ */
 
@@ -110,6 +113,66 @@ class ControllerBleAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbac
     Serial.printf("Advertised Device: %s \n", advertisedDevice.toString().c_str());
   }
 };
+
+/* Functions ------------------------------------------------------------------------------------ */
+
+/**
+ * @brief Tries to send a command then read a MAC address from the SwSerial port.
+ *
+ * @param[in] aCmd the command to send to the HM10 over the SwSerial port.
+ *
+ * @param[out] aMacAddr Pointer to a char buffer to store the read MAC address at. Must be at least
+ * kMacAddrStrLen elements large.
+ *
+ * @return boolean True if and only if a string containing a MAC address, prefixed by either a '='
+ * or ':' character, was read from the SwSerial buffer after sending the supplied command.
+ */
+boolean readSwSerialForMacAddress(const char* const aCmd, char* const aMacAddr) {
+  boolean ret = false;
+  size_t count = 0;
+
+  if (aCmd == NULL || aMacAddr == NULL) {
+    // Bad arguments
+  } else {
+    // Clear the output buffer
+    memset(aMacAddr, 0, kMacAddrStrLen);
+
+    // Send the supplied command and wait for a response
+    SwSerial.print(aCmd);
+    delay(kHm10AddrReqDelay_ms);
+
+    // Read the address provided by the HM10 (if any)
+    String read = SwSerial.readString();
+    Serial.printf("read MAC string: '%s'\n", read.c_str());
+
+    // TODO: Cleanup, optimize
+    for (size_t i = 0; i < read.length(); i++) {
+      Serial.printf("%c - %u\n", read[i], count);
+      char charLowered = read[i] | 0b00100000;
+
+      if ((count == 0 && read[i] == '=') || (count == 0 && read[i] == ':')) {
+        count++;
+      } else if (count > 0 && ((charLowered >= 'a') && (charLowered <= 'z'))) {
+        aMacAddr[count - 1] = charLowered;
+        Serial.printf("Set ==%u== to %c\n", count - 1, charLowered);
+        count++;
+      } else if (count > 0 && ((read[i] >= '0') && (read[i] <= '9'))) {
+        aMacAddr[count - 1] = read[i];
+        Serial.printf("Set ==%u== to %c\n", count - 1, read[i]);
+        count++;
+      } else {
+        count = 0;
+      }
+
+      if (count == 13) {
+        ret = true;
+        break;
+      }
+    }
+  }
+
+  return ret;
+}
 
 /* Setup and Loop ------------------------------------------------------------------------------- */
 
@@ -181,43 +244,38 @@ void setup() {
   bleScan->setInterval(100);
   bleScan->setWindow(99);
 
-  // Clear SwSerial Tx and Rx buffers
-  SwSerial.flush();
-  SwSerial.println();
-  SwSerial.readString();
+  // Set time before SwSerial Rx times out
+  SwSerial.setTimeout(kSwSerialTimeout_ms);
 
   // Attempt to read from an HM10, if plugged into the controller
+  char hm10Mac[kMacAddrStrLen] = {};
   for (int i = 0; i < 3; i++) {
-    // Request HM10's MAC address, and give plenty of time for it to respond
-    SwSerial.print("AT+ADDR?");
-    delay(500);
-
-    // Read the address provided by the HM10 (if any)
-    String read = SwSerial.readString();
-
-    // Check if the read MAC address string matches the expected format
-    if (read.length() == 20) {
-      // Remove the preceding "AT+GET: "
-      read.remove(0, 8);
-      Serial.printf("HM10 MAC Address: '%s'\n", read.c_str());
-
-      // Store the HM10's address in the Preferences library instance
-      // (this way the value will be remembered even after power cycles)
-      prefs.putString("hm10", read.c_str());
-
-      // Indicate to the user that the HM10's address has been stored
-      for (uint8_t blinkCount = 0; blinkCount < 5; blinkCount++) {
-        digitalWrite(kPinLed_Red, HIGH);
-        digitalWrite(kPinLed_Green, HIGH);
-        delay(200);
-        digitalWrite(kPinLed_Red, LOW);
-        digitalWrite(kPinLed_Green, LOW);
-        delay(200);
-      }
-
-      // Stop trying to talk to the HM10
-      break;
+    // Request HM10's MAC address using 2 different formats
+    // (one works on some, the other works on others)
+    if (!readSwSerialForMacAddress("AT+ADDR?", hm10Mac) &&
+        !readSwSerialForMacAddress("AT+LADDR?\r\n", hm10Mac)) {
+      // Go back to the start of the loop and try again
+      continue;
     }
+
+    Serial.printf("HM10 MAC Address: '%s'\n", hm10Mac);
+
+    // Store the HM10's address in the Preferences library instance
+    // (this way the value will be remembered even after power cycles)
+    prefs.putString("hm10", hm10Mac);
+
+    // Indicate to the user that the HM10's address has been stored
+    for (uint8_t blinkCount = 0; blinkCount < 5; blinkCount++) {
+      digitalWrite(kPinLed_Red, HIGH);
+      digitalWrite(kPinLed_Green, HIGH);
+      delay(200);
+      digitalWrite(kPinLed_Red, LOW);
+      digitalWrite(kPinLed_Green, LOW);
+      delay(200);
+    }
+
+    // Stop trying to talk to the HM10
+    break;
   }
 
   // Until a device is connected...
@@ -233,7 +291,7 @@ void setup() {
       // (12 hexadecimal characters (0-9 and A-F), all uppercase)
       std::string addr = foundDevices.getDevice(i).getAddress().toString();
       addr.erase(std::remove(addr.begin(), addr.end(), ':'), addr.end());
-      std::transform(addr.begin(), addr.end(), addr.begin(), ::toupper);
+      std::transform(addr.begin(), addr.end(), addr.begin(), ::tolower);
       Serial.printf("Scanned address: '%s'\n", addr.c_str());
 
       // If the address matches the one given to us by the HM10 module...
