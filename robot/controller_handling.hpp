@@ -48,8 +48,8 @@ class Controller {
   boolean btnLeftShoulder;
   boolean btnRightShoulder;
 
-  boolean btnStart;
-  boolean btnSelect;
+  boolean btnMidLeft;
+  boolean btnMidRight;
 
   int8_t joyLeftX;  // -100 to +100 (left to right)
   int8_t joyLeftY;  // -100 to +100 (down to up)
@@ -93,8 +93,8 @@ class Controller {
       // Update the member variables to reflect the current state of the controller
       btnLeftShoulder = (rxBuffer[1] & 0x01);
       btnRightShoulder = (rxBuffer[1] & 0x02);
-      btnStart = (rxBuffer[1] & 0x04);
-      btnSelect = (rxBuffer[1] & 0x08);
+      btnMidRight = (rxBuffer[1] & 0x04);
+      btnMidLeft = (rxBuffer[1] & 0x08);
       joyLeftBtn = (rxBuffer[1] & 0x10);
       joyRightBtn = (rxBuffer[1] & 0x20);
 

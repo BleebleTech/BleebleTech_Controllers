@@ -1,11 +1,10 @@
 /**
- * File: single_joystick_drive.hpp
+ * File: driving.hpp
  * Author: Matthew Allwright, theBasicBot
  * Copyright: 2023
  *
  * Description:
- * This file contains a function to map a controller's left joystick to a "single joystick drive"
- * control scheme.
+ * This file contains a function to map a controller's joystick(s) to drive control scheme.
  */
 
 /* Includes ------------------------------------------------------------------------------------- */
@@ -32,4 +31,9 @@ void singleJoystickDrive(const Controller& aController) {
       setRightMotor(aController.joyLeftY - aController.joyLeftX);
     }
   }
+}
+
+void tankDrive(const Controller& aController) {
+  setLeftMotor(aController.joyLeftY);
+  setRightMotor(aController.joyLeftY);
 }

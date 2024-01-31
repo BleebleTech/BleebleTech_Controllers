@@ -25,7 +25,14 @@ static constexpr uint8_t kMotorMaximum = 254;
 static constexpr uint8_t kMotorMaximum_Left = 255;
 static constexpr uint8_t kMotorMaximum_Right = 255;
 
-/* Functions ------------------------------------------------------------------------------------ */
+static constexpr uint8_t kMotorMaxPercent = 100;
+
+/* Constants ------------------------------------------------------------------------------------ */
+
+static uint8_t motorLimitPercent = kMotorMaxPercent;
+
+/* Functions
+   ------------------------------------------------------------------------------------ */
 
 void setupMotors() {
   pinMode(kRightWheel_Backwards, OUTPUT);
@@ -34,13 +41,23 @@ void setupMotors() {
   pinMode(kLeftWheel_Backwards, OUTPUT);
 }
 
+void setMotorLimit(const uint8_t aMax) {
+  if (aMax <= kMotorMaxPercent) {
+    motorLimitPercent = aMax;
+  } else {
+    motorLimitPercent = kMotorMaximum;
+  }
+}
+
 void setLeftMotor(const long aValue) {
-  if (aValue > 0) {
-    analogWrite(kLeftWheel_Forwards, map(aValue, 0, 100, 0, kMotorMaximum_Left));
+  uint8_t motorVal = min(aValue, motorLimitPercent);
+
+  if (motorVal > 0) {
+    analogWrite(kLeftWheel_Forwards, map(motorVal, 0, kMotorMaxPercent, 0, kMotorMaximum_Left));
     analogWrite(kLeftWheel_Backwards, 0);
-  } else if (aValue < 0) {
+  } else if (motorVal < 0) {
     analogWrite(kLeftWheel_Forwards, 0);
-    analogWrite(kLeftWheel_Backwards, map(aValue, 0, -100, 0, kMotorMaximum_Left));
+    analogWrite(kLeftWheel_Backwards, map(motorVal, 0, -kMotorMaxPercent, 0, kMotorMaximum_Left));
   } else {
     analogWrite(kLeftWheel_Forwards, 0);
     analogWrite(kLeftWheel_Backwards, 0);
@@ -48,12 +65,14 @@ void setLeftMotor(const long aValue) {
 }
 
 void setRightMotor(const long aValue) {
-  if (aValue > 0) {
-    analogWrite(kRightWheel_Forwards, map(aValue, 0, 100, 0, kMotorMaximum_Right));
+  uint8_t motorVal = min(aValue, motorLimitPercent);
+
+  if (motorVal > 0) {
+    analogWrite(kRightWheel_Forwards, map(motorVal, 0, kMotorMaxPercent, 0, kMotorMaximum_Right));
     analogWrite(kRightWheel_Backwards, 0);
-  } else if (aValue < 0) {
+  } else if (motorVal < 0) {
     analogWrite(kRightWheel_Forwards, 0);
-    analogWrite(kRightWheel_Backwards, map(aValue, 0, -100, 0, kMotorMaximum_Right));
+    analogWrite(kRightWheel_Backwards, map(motorVal, 0, -kMotorMaxPercent, 0, kMotorMaximum_Right));
   } else {
     analogWrite(kRightWheel_Forwards, 0);
     analogWrite(kRightWheel_Backwards, 0);

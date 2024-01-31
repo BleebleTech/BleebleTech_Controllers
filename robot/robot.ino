@@ -10,10 +10,10 @@
 /* Includes ------------------------------------------------------------------------------------- */
 
 #include "controller_handling.hpp"
+#include "driving.hpp"
+#include "lights.hpp"
 #include "motor_control.hpp"
 #include "servo_control.hpp"
-#include "single_joystick_drive.hpp"
-#include "tank_drive.hpp"
 
 /* Macros --------------------------------------------------------------------------------------- */
 
@@ -48,6 +48,7 @@ void setup() {
 
   setupMotors();
   setupServos();
+  setupLights();
 }
 
 void loop() {
@@ -62,6 +63,7 @@ void loop() {
   /* ---------------------------------- */
   controlArmServo(controller);
   controlPaddleServos(controller);
+  controlLights(controller);
 
 #ifdef TANK_DRIVE
   /* ---------------------------------- */

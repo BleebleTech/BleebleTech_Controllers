@@ -7,6 +7,9 @@
  * This file contains functions to control both the arm and paddle servos of the robot.
  */
 
+// TODO: Abstraction of speed (make 0-100, like motors)
+// TODO: Make generic, leave layout/template
+
 /* Includes ------------------------------------------------------------------------------------- */
 
 #include <Servo.h>
