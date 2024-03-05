@@ -1,15 +1,16 @@
 /**
- * File: driving.hpp
+ * File: 3_driving.hpp
  * Author: Matthew Allwright, theBasicBot
  * Copyright: 2023
  *
  * Description:
- * This file contains a function to map a controller's joystick(s) to drive control scheme.
+ * This file contains functions to map a controller's joystick(s) for driving the Basic Bot.
+ * The tank drive mode requires 2 joysticks, so it can only be used with the Advanced Controller.
  */
 
 /* Includes ------------------------------------------------------------------------------------- */
 
-#include "controller_handling.hpp"
+#include "1_controller_handling.hpp"
 
 /* Functions ------------------------------------------------------------------------------------ */
 

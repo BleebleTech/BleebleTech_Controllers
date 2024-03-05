@@ -1,5 +1,5 @@
 /**
- * File: lights.hpp
+ * File: 5_lights.hpp
  * Author: Matthew Allwright, theBasicBot
  * Copyright: 2023
  *
@@ -9,11 +9,11 @@
 
 /* Includes ------------------------------------------------------------------------------------- */
 
-#include "controller_handling.hpp"
+#include "1_controller_handling.hpp"
 
 /* Constants ------------------------------------------------------------------------------------ */
 
-// Servo configuration
+// Lights configuration
 static constexpr int kPinLightLeft = 4;
 static constexpr int kPinLightRight = 13;
 
@@ -22,11 +22,13 @@ static constexpr int kPinLightRight = 13;
 void lightsOn() {
   digitalWrite(kPinLightLeft, HIGH);
   digitalWrite(kPinLightRight, HIGH);
+  Serial.println("Lights On");
 }
 
 void lightsOff() {
   digitalWrite(kPinLightLeft, LOW);
   digitalWrite(kPinLightRight, LOW);
+  Serial.println("Lights Off");
 }
 
 void setupLights() {

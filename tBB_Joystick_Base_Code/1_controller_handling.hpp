@@ -1,5 +1,5 @@
 /**
- * File: controller_handling.hpp
+ * File: 1_controller_handling.hpp
  * Author: Matthew Allwright, theBasicBot
  * Copyright: 2023
  *
@@ -8,6 +8,10 @@
  * data received from the controller over BLE.
  */
 
+// This practice is called using a "Header Guard", which allows for a header file like this one to
+// be included (using #include "...") in multiple different files without the compiler complaining
+// about "multiple definitions". You can safely ignore this for now. Note that there will be
+// an #endif at the bottom of this file to "close" the header guard.
 #ifndef CONTROLLER_HANDLING_HPP
 #define CONTROLLER_HANDLING_HPP
 
@@ -36,25 +40,40 @@ class Controller {
   }
 
  public:
-  boolean btnLeftUp;
-  boolean btnLeftRight;
-  boolean btnLeftDown;
-  boolean btnLeftLeft;
+  /* ---------------------------------- */
+  /*    Basic + Advanced Controller     */
+  /* ---------------------------------- */
+
+  // Right button bank
   boolean btnRightUp;
   boolean btnRightRight;
   boolean btnRightDown;
   boolean btnRightLeft;
 
-  boolean btnLeftShoulder;
-  boolean btnRightShoulder;
-
+  // Middle button bank
   boolean btnMidLeft;
   boolean btnMidRight;
 
+  // Left joystick
   int8_t joyLeftX;  // -100 to +100 (left to right)
   int8_t joyLeftY;  // -100 to +100 (down to up)
   boolean joyLeftBtn;
 
+  /* ---------------------------------- */
+  /*      Advanced Controller Only      */
+  /* ---------------------------------- */
+
+  // Left button bank
+  boolean btnLeftUp;
+  boolean btnLeftRight;
+  boolean btnLeftDown;
+  boolean btnLeftLeft;
+
+  // Shoulder buttons
+  boolean btnLeftShoulder;
+  boolean btnRightShoulder;
+
+  // Right joystick
   int8_t joyRightX;  // -100 to +100 (left to right)
   int8_t joyRightY;  // -100 to +100 (down to up)
   boolean joyRightBtn;
@@ -77,10 +96,7 @@ class Controller {
           numRxBytes = 0;
         }
       }
-      // else {
-      //   // Wait for data
       delay(8);
-      // }
     } else {
 #ifdef DEBUG
       // Print received message to the console
@@ -119,4 +135,5 @@ class Controller {
   }
 };
 
+// Ending the "Header Guard"
 #endif
