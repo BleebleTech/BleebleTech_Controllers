@@ -1,10 +1,10 @@
 /**
- * File: controller.ino
- * Author: Matthew Allwright, theBasicBot
+ * File: BleebleTech_Controller.ino
+ * Author: Matthew Allwright
  * Copyright: 2023
  *
  * Description:
- * This file serves as the base sketch for theBasicBot's ESP32-based controller.
+ * This file serves as the base sketch for the BleebleTech Basic and Advanced Controller.
  */
 
 /* Includes ------------------------------------------------------------------------------------- */
