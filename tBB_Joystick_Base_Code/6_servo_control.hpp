@@ -1,3 +1,4 @@
+#pragma once
 /**
  * File: 6_servo_control.hpp
  * Author: Matthew Allwright, theBasicBot

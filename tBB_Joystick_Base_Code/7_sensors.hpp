@@ -1,3 +1,4 @@
+#pragma once
 /**
  * File: 7_sensors.hpp
  * Author: Matthew Allwright, theBasicBot

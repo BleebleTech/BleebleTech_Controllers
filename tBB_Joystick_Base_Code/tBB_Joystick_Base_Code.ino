@@ -53,6 +53,7 @@ void setup() {
   setupServos();
   setupLights();
   setupSensors();
+  setupDriving();
 }
 
 void loop() {
@@ -69,16 +70,6 @@ void loop() {
   controlServo1(controller);
   controlServo2(controller);
   controlLights(controller);
-
-#ifdef TANK_DRIVE
-  /* ---------------------------------- */
-  /*             TANK DRIVE             */
-  /* ---------------------------------- */
-  tankDrive(controller);
-#else
-  /* ---------------------------------- */
-  /*        SINGLE JOYSTICK DRIVE       */
-  /* ---------------------------------- */
-  singleJoystickDrive(controller);
-#endif
+  controlMotors(controller);
+  controlAutonomous(controller);
 }

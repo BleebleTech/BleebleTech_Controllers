@@ -1,3 +1,4 @@
+#pragma once
 /**
  * File: 3_driving.hpp
  * Author: Matthew Allwright, theBasicBot
@@ -11,6 +12,20 @@
 /* Includes ------------------------------------------------------------------------------------- */
 
 #include "1_controller_handling.hpp"
+#include "2_motor_control.hpp"
+
+/* Constants ------------------------------------------------------------------------------------ */
+
+static constexpr int kFastModeMotorPercent = 100;
+static constexpr int kSlowModeMotorPercent = 50;
+
+static constexpr unsigned long kSpeedToggleDebounceDelayMs = 100;
+
+/* Variables ------------------------------------------------------------------------------------ */
+
+static boolean isFastModeEnabled = true;
+static boolean wasSpeedToggleBtnPressed = false;
+static unsigned long lastSpeedToggleButtonTime = 0;
 
 /* Functions ------------------------------------------------------------------------------------ */
 
@@ -37,4 +52,73 @@ void singleJoystickDrive(const Controller& aController) {
 void tankDrive(const Controller& aController) {
   setLeftMotor(aController.joyLeftY);
   setRightMotor(aController.joyLeftY);
+}
+
+void setFastMode() {
+  setMotorLimit(kFastModeMotorPercent);
+  isFastModeEnabled = true;
+}
+
+void setSlowMode() {
+  setMotorLimit(kSlowModeMotorPercent);
+  isFastModeEnabled = false;
+}
+
+void toggleMotorSpeed() {
+  if (isFastModeEnabled) {
+    setSlowMode();
+  } else {
+    setFastMode();
+  }
+}
+
+void setupDriving() { setFastMode(); }
+
+void controlMotors(const Controller& aController) {
+  unsigned long currentTime = millis();
+  if (aController.joyLeftBtn && !wasSpeedToggleBtnPressed &&
+      currentTime - lastSpeedToggleButtonTime > kSpeedToggleDebounceDelayMs) {
+    lastSpeedToggleButtonTime = millis();
+    wasSpeedToggleBtnPressed = true;
+    toggleMotorSpeed();
+  } else if (!aController.joyLeftBtn) {
+    wasSpeedToggleBtnPressed = false;
+  }
+
+#ifdef TANK_DRIVE
+  /* ---------------------------------- */
+  /*             TANK DRIVE             */
+  /* ---------------------------------- */
+  tankDrive(aController);
+#else
+  /* ---------------------------------- */
+  /*        SINGLE JOYSTICK DRIVE       */
+  /* ---------------------------------- */
+  singleJoystickDrive(aController);
+#endif
+}
+
+void driveForward() {
+  setLeftMotor(100);
+  setRightMotor(100);
+}
+
+void driveBackwards() {
+  setLeftMotor(-100);
+  setRightMotor(-100);
+}
+
+void stopDriving() {
+  setLeftMotor(0);
+  setRightMotor(0);
+}
+
+void turnRight() {
+  setLeftMotor(-100);
+  setRightMotor(100);
+}
+
+void turnLeft() {
+  setLeftMotor(100);
+  setRightMotor(-100);
 }

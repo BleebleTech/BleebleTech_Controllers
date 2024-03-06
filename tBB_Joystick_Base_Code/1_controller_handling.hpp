@@ -1,3 +1,4 @@
+#pragma once
 /**
  * File: 1_controller_handling.hpp
  * Author: Matthew Allwright, theBasicBot
@@ -7,13 +8,6 @@
  * This file contains the class definition of a controller object, and defines the methods to handle
  * data received from the controller over BLE.
  */
-
-// This practice is called using a "Header Guard", which allows for a header file like this one to
-// be included (using #include "...") in multiple different files without the compiler complaining
-// about "multiple definitions". You can safely ignore this for now. Note that there will be
-// an #endif at the bottom of this file to "close" the header guard.
-#ifndef CONTROLLER_HANDLING_HPP
-#define CONTROLLER_HANDLING_HPP
 
 /* Types ---------------------------------------------------------------------------------------- */
 
@@ -27,7 +21,10 @@ class Controller {
   static constexpr uint8_t kJoystickMinimum = 0;
   static constexpr uint8_t kJoystickMiddle = 127;
   static constexpr uint8_t kJoystickMaximum = 254;
-  static constexpr uint8_t kJoystickDeadzone = 16;
+
+  // Increase this slightly if the robot is driving (or its motors are whining) without moving the
+  // joystick
+  static constexpr uint8_t kJoystickDeadzone = 22;
 
   int8_t parseJoystickValue(const uint8_t aAxis) {
     if (aAxis <= kJoystickMiddle - kJoystickDeadzone) {
@@ -109,10 +106,10 @@ class Controller {
       // Update the member variables to reflect the current state of the controller
       btnLeftShoulder = (rxBuffer[1] & 0x01);
       btnRightShoulder = (rxBuffer[1] & 0x02);
-      btnMidRight = (rxBuffer[1] & 0x04);
-      btnMidLeft = (rxBuffer[1] & 0x08);
-      joyLeftBtn = (rxBuffer[1] & 0x10);
-      joyRightBtn = (rxBuffer[1] & 0x20);
+      btnMidLeft = (rxBuffer[1] & 0x04);
+      btnMidRight = (rxBuffer[1] & 0x08);
+      joyRightBtn = (rxBuffer[1] & 0x10);
+      joyLeftBtn = (rxBuffer[1] & 0x20);
 
       btnLeftUp = (rxBuffer[2] & 0x01);
       btnLeftRight = (rxBuffer[2] & 0x02);
@@ -134,6 +131,3 @@ class Controller {
     }
   }
 };
-
-// Ending the "Header Guard"
-#endif
