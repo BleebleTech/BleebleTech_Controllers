@@ -33,9 +33,9 @@ Programming the BleebleTech controllers is super easy:
 1. Plug the controller into your computer with a Micro-USB cable
 2. Open the `BleebleTech_Controller/BleebleTech_Controller.ino` file from this repository, which should open in the Arduino IDE
 3. At the top of the Arduino IDE, click the "Select Board" dropdown, then select the COM port shown
-  a. The board type may be shown as "Unknown", this is okay
-  b. If you see multiple COM ports listed, take note of all the list items, unplug the controller, look at the list again, and take note of which item disappeared. This is the COM port assigned to the controller, so plug the controller back in, then select the now re-added COM port!
-4. Click the "Upload" arrow just to the left of the board selector.
-  a. This will take longer than usual the first time around, and may be a few minutes on any modern computer. On some very old and under-powered laptops, this has been known to take up to *20-25 minutes*, so please be patient the first time if your computer matches this description. This time is unfortunately not something we can control or improve, and is a limitation of the computing power and Arduino IDE's compiler.
+    - The board type may be shown as "Unknown", this is okay
+    - If you see multiple COM ports listed, take note of all the list items, unplug the controller, look at the list again, and take note of which item disappeared. This is the COM port assigned to the controller, so plug the controller back in, then select the now re-added COM port!
+5. Click the "Upload" arrow just to the left of the board selector.
+    - This will take longer than usual the first time around, and may be a few minutes on any modern computer. On some very old and under-powered laptops, this has been known to take up to *20-25 minutes*, so please be patient the first time if your computer matches this description. This time is unfortunately not something we can control or improve, and is a limitation of the computing power and Arduino IDE's compiler.
 
 Contact us via [the BleebleTech website](https://bleebletech.ca/pages/contact) if you have any troubles that you can't seem to figure out on your own, and we'll do our best to help you out.
