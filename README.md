@@ -1,7 +1,5 @@
 # BleebleTech Controllers
 
-[toc]
-
 ## Introduction
 
 The [BleebleTech Basic and Advanced Controllers](https://bleebletech.ca) are made to be simple, hackable tools for you to use in any electronics project that requires button presses or joystick movement from a user. They were originally conceived of and designed for use with [The Basic Bot](https://thebasicbot.com) robotics platform and education curriculum, however are absolutely usable for any other BLE project!
@@ -12,7 +10,7 @@ To program either the **BleebleTech Basic/Advanced Controllers**, or **The Basic
 
 ### Controller-Specific Setup
 
-Once the Arduino IDE is installed, you'll need to install the following board package by searching for it in the the "Boards Manager" on the left of the IDE:
+Once the Arduino IDE is installed, you'll need to install the following board package by searching for it in the "Boards Manager" on the left of the IDE:
 
 - ["esp32" by Espressif Systems](https://github.com/espressif/arduino-esp32)
   - This allows the Arduino IDE to properly handle the ESP32 microcontroller used in the BleebleTech controllers instead of a typical Arduino Uno or similar board
