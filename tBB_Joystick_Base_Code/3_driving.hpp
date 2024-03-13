@@ -9,6 +9,17 @@
  * The tank drive mode requires 2 joysticks, so it can only be used with the Advanced Controller.
  */
 
+/* Config --------------------------------------------------------------------------------------- */
+
+/**
+ * @brief Uncomment this macro to enable "Tank Drive" mode. If left comment out, the robot will
+ * remain in the default "Single Joystick Drive" mode.
+ *
+ * @remark "Tank Drive" mode requires a controller with 2 joysticks, which would mean a tBB Advanced
+ * controller, but not a tBB Basic controller.
+ */
+// #define TANK_DRIVE
+
 /* Includes ------------------------------------------------------------------------------------- */
 
 #include "1_controller_handling.hpp"

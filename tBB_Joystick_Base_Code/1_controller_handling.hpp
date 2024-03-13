@@ -9,6 +9,14 @@
  * data received from the controller over BLE.
  */
 
+/* Config --------------------------------------------------------------------------------------- */
+
+/**
+ * @brief Uncomment this macro to enable debugging features. These can help you figure out if
+ * anything is going wrong, but may reduce the performance of the program.
+ */
+// #define DEBUG
+
 /* Types ---------------------------------------------------------------------------------------- */
 
 class Controller {

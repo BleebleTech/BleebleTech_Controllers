@@ -7,23 +7,6 @@
  * This file serves as an example for robots controlled by theBasicBot's ESP32-based controller.
  */
 
-/* Config --------------------------------------------------------------------------------------- */
-
-/**
- * @brief Uncomment this macro to enable "Tank Drive" mode. If left comment out, the robot will
- * remain in the default "Single Joystick Drive" mode.
- *
- * @remark "Tank Drive" mode requires a controller with 2 joysticks, which would mean a tBB Advanced
- * controller, but not a tBB Basic controller.
- */
-// #define TANK_DRIVE
-
-/**
- * @brief Uncomment this macro to enable debugging features. These can help you figure out if
- * anything is going wrong, but may reduce the performance of the program.
- */
-// #define DEBUG
-
 /* Includes ------------------------------------------------------------------------------------- */
 
 #include "1_controller_handling.hpp"
