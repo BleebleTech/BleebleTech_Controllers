@@ -61,7 +61,7 @@ void controlServo1(const Controller& aController) {
     Serial.print(servo1Pos);
     Serial.println(" deg");
   } else if (aController.btnRightDown && servo1Pos > kServo1MinDeg) {
-    servo1Pos -= max(kServo1Speed, servo1Pos - kServo1MinDeg);
+    servo1Pos -= min(kServo1Speed, servo1Pos - kServo1MinDeg);
     Serial.print("Servo1 = ");
     Serial.print(servo1Pos);
     Serial.println(" deg");
@@ -76,7 +76,7 @@ void controlServo2(const Controller& aController) {
     Serial.print(servo2Pos);
     Serial.println(" deg");
   } else if (aController.btnRightDown && servo2Pos > kServo2MinDeg) {
-    servo2Pos -= max(kServo2Speed, servo2Pos - kServo2MinDeg);
+    servo2Pos -= min(kServo2Speed, servo2Pos - kServo2MinDeg);
     Serial.print("Servo2 = ");
     Serial.print(servo2Pos);
     Serial.println(" deg");
