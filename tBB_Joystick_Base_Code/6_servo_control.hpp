@@ -10,48 +10,67 @@
 
 /* Includes ------------------------------------------------------------------------------------- */
 
-#include <Servo.h>
+#include <Adafruit_PWMServoDriver.h>
 
 #include "1_controller_handling.hpp"
 
-/* Constants ------------------------------------------------------------------------------------ */
+/* Constants and Variables ---------------------------------------------------------------------- */
+
+
+/* ---------------------------------- */
+/*           Driver Config            */
+/* ---------------------------------- */
+
+static Adafruit_PWMServoDriver servoDriver = Adafruit_PWMServoDriver();
+
+static constexpr uint32_t kServoDriverOscillatorFrequencyHz = 27000000;
+static constexpr float kServoDriverPwmFrequencyHz = 50.0f;
+static constexpr uint16_t kServoPulseMin = 100;
+static constexpr uint16_t kServoPulseMax = 500;
+static constexpr uint16_t kServoAngleMin = 0;
+static constexpr uint16_t kServoAngleMax = 180;
 
 /* ---------------------------------- */
 /*           Servo 1 Config           */
 /* ---------------------------------- */
 
-static Servo servo1;
-static constexpr int kPinServo1 = 9;
+static constexpr int kServo1Channel = 0;
 
 static uint8_t servo1Pos = 90;
 static constexpr uint8_t kServo1MinDeg = 1;    // Minimum 1
 static constexpr uint8_t kServo1MaxDeg = 180;  // Maximum 180
-static constexpr uint16_t kServo1Speed = 1;
+static constexpr int16_t kServo1Speed = 5;
 
 /* ---------------------------------- */
 /*           Servo 2 Config           */
 /* ---------------------------------- */
 
-static Servo servo2;
-static constexpr int kPinServo2 = 10;
+static constexpr int kServo2Channel = 1;
 
 static uint8_t servo2Pos = 90;
-static constexpr uint8_t kServo2MinDeg = 40;   // Minimum 0
-static constexpr uint8_t kServo2MaxDeg = 140;  // Maximum 180
-static constexpr uint16_t kServo2Speed = 20;
+static constexpr uint8_t kServo2MinDeg = 45;   // Minimum 0
+static constexpr uint8_t kServo2MaxDeg = 130;  // Maximum 180
+static constexpr int16_t kServo2Speed = 2;
 
 /* Functions ------------------------------------------------------------------------------------ */
 
 void setupServos() {
-  servo1.attach(kPinServo1);
+  servoDriver.begin();
+  servoDriver.setOscillatorFrequency(kServoDriverOscillatorFrequencyHz);
+  servoDriver.setPWMFreq(kServoDriverPwmFrequencyHz);
+
   Serial.print("Servo1 starting position = ");
   Serial.print(servo1Pos);
   Serial.println(" deg");
 
-  servo2.attach(kPinServo2);
   Serial.print("Servo2 starting position = ");
   Serial.print(servo2Pos);
   Serial.println(" deg");
+}
+
+void setServoAngle(const uint8_t aChannel, const uint16_t aAngle) {
+  const uint16_t limitedAngle = min(aAngle, 180);
+  servoDriver.setPWM(aChannel, 0, map(limitedAngle, kServoAngleMin, kServoAngleMax, kServoPulseMin, kServoPulseMax));
 }
 
 void controlServo1(const Controller& aController) {
@@ -66,7 +85,7 @@ void controlServo1(const Controller& aController) {
     Serial.print(servo1Pos);
     Serial.println(" deg");
   }
-  servo1.write(servo1Pos);
+  setServoAngle(kServo1Channel, servo1Pos);
 }
 
 void controlServo2(const Controller& aController) {
@@ -81,5 +100,5 @@ void controlServo2(const Controller& aController) {
     Serial.print(servo2Pos);
     Serial.println(" deg");
   }
-  servo2.write(servo2Pos);
+  setServoAngle(kServo2Channel, servo2Pos);
 }
