@@ -13,6 +13,9 @@ To program either the **BleebleTech Basic/Advanced Controllers**, or **The Basic
 Once the Arduino IDE is installed, you'll need to install the following board package by searching for it in the "Boards Manager" on the left of the IDE:
 
 - ["esp32" by Espressif Systems](https://github.com/espressif/arduino-esp32)
+  - ***IMPORTANT:*** Use version 2.0.17! Version 3.0.0 and above are *not compatible* due to a breaking change made by the ESP32 library. We are working on a fix for this!
+    - The Arduino IDE may occasionally prompt to update your board libraries, but don't allow that.
+    - If you're seeing `error: conversion from 'BLEScanResults*' to non-scalar type 'BLEScanResults' requested` when trying to compile the code, the board library version number is the culprit!
   - This allows the Arduino IDE to properly handle the ESP32 microcontroller used in the BleebleTech controllers instead of a typical Arduino Uno or similar board
 
 Next, you'll need to search for and install the following libraries in the "Library Manager" on the left of the IDE:
